@@ -1,0 +1,212 @@
+scalar Upload
+  @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\Upload")
+
+type Query {
+  topNav: [TopNavCategory!]!
+  currentCustomer: Customer
+  pageBySlug(slug: String!): CmsPage
+  productConditions: [ProductCondition!]!
+  getMyListing(status: Int): [Listing!]!
+  getMyListingDetail(listing_id: Int!): Listing!
+  getMyClaimRequests: [ClaimRequest!]!
+  getProduct(url_key: String!): ProductDetail
+  getCategoryProducts(
+    url_key: String!
+    child_category_id: ID
+    condition_id: ID
+    date_added: String
+    page: Int = 1
+    per_page: Int = 12
+  ): CategoryProductsPayload!
+}
+
+type Mutation {
+  registerCustomer(input: RegisterCustomerInput!): CustomerAuthPayload!
+  loginCustomer(input: LoginCustomerInput!): CustomerAuthPayload!
+  logoutCustomer: Boolean!
+  createList(input: CreateListInput!): CreateListPayload!
+  claimItem(input: ClaimItemInput!): ClaimItemPayload!
+  approveClaimRequest(request_id: Int!): ClaimItemPayload!
+}
+
+type TopNavCategory {
+  category_id: ID!
+  title: String!
+  url_key: String
+  children: [TopNavCategory!]!
+}
+
+type Customer {
+  customer_id: ID!
+  name: String!
+  email: String!
+}
+
+type CustomerAuthPayload {
+  customer: Customer!
+}
+
+type CmsPage {
+  id: ID!
+  title: String!
+  slug: String!
+  content: String!
+}
+
+type ProductCondition {
+  condition_id: ID!
+  condition_title: String!
+  description: String!
+  value_adjustment: Float!
+}
+
+type Listing {
+  listing_id: ID!
+  customer_id: ID!
+  status: Int!
+  notes: String
+  created_at: String!
+  products: [Product!]!
+  claimRequests: [ClaimRequest!]!
+}
+
+type Product {
+  product_id: ID!
+  product_name: String!
+  description: String
+  category_id: ID!
+  condition: Int!
+  category: CategorySummary
+  productCondition: ProductCondition
+}
+
+type CategorySummary {
+  category_id: ID!
+  category_title: String!
+  url_key: String
+  description: String
+  category_image: String
+  category_image_mobile: String
+  parent_id: ID!
+  children: [CategorySummary!]!
+}
+
+type CategoryProduct {
+  listing_id: ID!
+  product_id: ID!
+  product_name: String!
+  url_key: String!
+  category_id: ID!
+  thumbnail_url: String
+  condition_title: String
+  condition_id: ID
+  date_added: String
+}
+
+type ProductDetail {
+  listing_id: ID
+  listing_customer_id: ID
+  product_id: ID!
+  product_name: String!
+  url_key: String!
+  sku: String
+  description: String
+  category_title: String
+  condition_title: String
+  date_added: String
+  listing_notes: String
+  has_claim_request: Boolean!
+  gallery_images: [ProductGalleryImage!]!
+}
+
+type ClaimRequest {
+  request_id: ID!
+  customer_id: ID!
+  listing_id: ID!
+  product_id: ID!
+  notes: String
+  pickup_date: String
+  timeslot: String
+  status: Int!
+  customer: Customer
+  listing: Listing
+  product: Product
+}
+
+type ProductGalleryImage {
+  gallery_id: ID!
+  image_url: String!
+  image_type: String!
+}
+
+type CategoryProductsPayload {
+  category: CategorySummary
+  products: [CategoryProduct!]!
+  filters: CategoryProductFilters!
+  pagination: CategoryProductPagination!
+}
+
+type CategoryProductFilters {
+  total: Int!
+  child_categories: [CategoryProductFilterOption!]!
+  conditions: [CategoryProductFilterOption!]!
+  date_added: [CategoryProductFilterOption!]!
+}
+
+type CategoryProductFilterOption {
+  id: String!
+  title: String!
+  count: Int!
+}
+
+type CategoryProductPagination {
+  page: Int!
+  per_page: Int!
+  total: Int!
+  total_pages: Int!
+  from: Int!
+  to: Int!
+}
+
+type CreateListPayload {
+  success: Boolean!
+  message: String!
+  error: String
+}
+
+type ClaimItemPayload {
+  success: Boolean!
+  message: String!
+  claim_request: ClaimRequest
+}
+
+input RegisterCustomerInput {
+  name: String!
+  email: String!
+  password: String!
+  password_confirmation: String!
+}
+
+input LoginCustomerInput {
+  email: String!
+  password: String!
+}
+
+input CreateListInput {
+  product_name: String!
+  product_description: String
+  category_id: ID!
+  condition_id: ID!
+  notes: String
+  images: [Upload!]!
+  main_image_index: Int!
+}
+
+input ClaimItemInput {
+  customer_id: Int!
+  listing_id: Int!
+  product_id: Int!
+  notes: String
+  pickup_date: String
+  pickup_slot: String
+}
