@@ -32,3 +32,4 @@
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 720px; border-collapse: collapse;">
                     <tr>
                         <td style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 32px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);">
+upd
