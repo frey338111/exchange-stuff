@@ -67,7 +67,7 @@ class GetCategoryProducts
                 'products.productCondition',
                 'products.productGalleries' => fn ($query) => $query->where('image_type', 'thumbnail'),
             ])
-            ->where('status', Listing::STATUS_LIVE)
+            ->whereIn('status', [Listing::STATUS_LIVE, Listing::STATUS_REQUESTED])
             ->whereHas('products', fn ($query) => $query->whereIn('product.category_id', $categoryIds))
             ->orderByDesc('created_at')
             ->get();

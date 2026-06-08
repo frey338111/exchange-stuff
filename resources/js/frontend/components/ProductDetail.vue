@@ -26,10 +26,15 @@
                     </h1>
 
                     <dl class="mt-8 space-y-3 text-sm">
-                        <div class="flex gap-2">
+                        <div class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2">
                             <dt class="shrink-0 font-medium text-gray-600">Condition:</dt>
-                            <dd :class="conditionClass(product.condition_title)">
-                                {{ product.condition_title ?? '-' }}
+                            <dd>
+                                <div :class="conditionClass(product.condition_title)">
+                                    {{ product.condition_title ?? '-' }}
+                                </div>
+                            </dd>
+                            <dd class="col-span-2 mt-1 text-sm italic leading-5 text-gray-500">
+                                {{ product.condition_description ?? '-' }}
                             </dd>
                         </div>
                         <div class="flex gap-2">
@@ -143,6 +148,7 @@ async function loadProduct() {
                     description
                     category_title
                     condition_title
+                    condition_description
                     date_added
                     listing_notes
                     has_claim_request

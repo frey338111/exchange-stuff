@@ -9,6 +9,8 @@ type Query {
   getMyListing(status: Int): [Listing!]!
   getMyListingDetail(listing_id: Int!): Listing!
   getMyClaimRequests: [ClaimRequest!]!
+  getMyAddress: [PickupAddress!]!
+  quickSearch(searchItem: String!): [QuickSearchProduct!]!
   getProduct(url_key: String!): ProductDetail
   getCategoryProducts(
     url_key: String!
@@ -27,6 +29,8 @@ type Mutation {
   createList(input: CreateListInput!): CreateListPayload!
   claimItem(input: ClaimItemInput!): ClaimItemPayload!
   approveClaimRequest(request_id: Int!): ClaimItemPayload!
+  addAddress(input: AddAddressInput!): AddAddressPayload!
+  deleteAddress(pickup_address_id: Int!): DeleteAddressPayload!
 }
 
 type TopNavCategory {
@@ -103,6 +107,12 @@ type CategoryProduct {
   date_added: String
 }
 
+type QuickSearchProduct {
+  product_name: String!
+  url_key: String!
+  thumbnail_url: String
+}
+
 type ProductDetail {
   listing_id: ID
   listing_customer_id: ID
@@ -113,6 +123,7 @@ type ProductDetail {
   description: String
   category_title: String
   condition_title: String
+  condition_description: String
   date_added: String
   listing_notes: String
   has_claim_request: Boolean!
@@ -131,6 +142,21 @@ type ClaimRequest {
   customer: Customer
   listing: Listing
   product: Product
+}
+
+type PickupAddress {
+  pickup_address_id: ID!
+  customer_id: ID!
+  name: String
+  phone: String
+  address_line_1: String!
+  address_line_2: String
+  city: String!
+  county: String
+  postcode: String!
+  country: String!
+  created_at: String!
+  updated_at: String!
 }
 
 type ProductGalleryImage {
@@ -180,6 +206,17 @@ type ClaimItemPayload {
   claim_request: ClaimRequest
 }
 
+type AddAddressPayload {
+  success: Boolean!
+  message: String!
+  address: PickupAddress
+}
+
+type DeleteAddressPayload {
+  success: Boolean!
+  message: String!
+}
+
 input RegisterCustomerInput {
   name: String!
   email: String!
@@ -209,4 +246,16 @@ input ClaimItemInput {
   notes: String
   pickup_date: String
   pickup_slot: String
+}
+
+input AddAddressInput {
+  pickup_address_id: Int
+  name: String
+  phone: String
+  address_line_1: String!
+  address_line_2: String
+  city: String!
+  county: String
+  postcode: String!
+  country: String
 }

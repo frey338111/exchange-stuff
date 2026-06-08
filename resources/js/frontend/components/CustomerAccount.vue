@@ -223,7 +223,77 @@
                         </div>
                     </div>
 
-                    <div v-else class="max-w-5xl">
+                    <div v-else-if="activeSection === 'pickupAddresses'" class="max-w-5xl">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <h2 class="text-lg font-semibold text-gray-950">My pickup address</h2>
+
+                            <button
+                                type="button"
+                                class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                                @click="openAddressModal()"
+                            >
+                                Add New
+                            </button>
+                        </div>
+
+                        <p v-if="addressSuccess" class="mt-4 text-sm text-green-700">
+                            {{ addressSuccess }}
+                        </p>
+
+                        <div v-if="addressesLoading" class="mt-6 space-y-3">
+                            <div class="h-12 animate-pulse rounded-md bg-gray-100"></div>
+                            <div class="h-12 animate-pulse rounded-md bg-gray-100"></div>
+                        </div>
+
+                        <p v-else-if="addressesError" class="mt-6 text-sm text-red-600">
+                            {{ addressesError }}
+                        </p>
+
+                        <div v-else-if="pickupAddresses.length" class="mt-6 overflow-x-auto border-y border-gray-200">
+                            <table class="min-w-full divide-y divide-gray-200 text-left">
+                                <thead>
+                                    <tr>
+                                        <th class="py-3 pe-4 text-xs font-semibold uppercase text-gray-500">Name</th>
+                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Address</th>
+                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Phone</th>
+                                        <th class="py-3 ps-4 text-right text-xs font-semibold uppercase text-gray-500">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr v-for="address in pickupAddresses" :key="address.pickup_address_id">
+                                        <td class="py-4 pe-4 text-sm font-medium text-gray-950">{{ address.name || '-' }}</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">{{ formatAddress(address) }}</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700">{{ address.phone || '-' }}</td>
+                                        <td class="py-4 ps-4 text-right text-sm">
+                                            <div class="flex justify-end gap-3">
+                                                <button
+                                                    type="button"
+                                                    class="font-medium text-gray-900 hover:text-gray-600"
+                                                    @click="openAddressModal(address)"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="font-medium text-red-700 hover:text-red-600 disabled:cursor-not-allowed disabled:text-red-300"
+                                                    :disabled="deletingAddressId === Number(address.pickup_address_id)"
+                                                    @click="deletePickupAddress(address.pickup_address_id)"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p v-else class="mt-6 text-sm text-gray-600">
+                            No pickup addresses found.
+                        </p>
+                    </div>
+
+                    <div v-else-if="activeSection === 'claimRequests'" class="max-w-5xl">
                         <h2 class="text-lg font-semibold text-gray-950">My Claim Requests</h2>
 
                         <div v-if="claimRequestsLoading" class="mt-6 space-y-3">
@@ -275,6 +345,16 @@
             @close="closeCreateListModal()"
             @created="handleListCreated"
         />
+
+        <AddressForm
+            v-if="customer && addressModalOpen"
+            :address="selectedAddress"
+            :country-options="countryOptions"
+            :error="addressFormError"
+            :saving="addressSaving"
+            @close="closeAddressModal()"
+            @save="saveAddress"
+        />
     </CustomerCheck>
 </template>
 
@@ -282,6 +362,7 @@
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
 import CreateListModal from './CreateListModal.vue';
 import CustomerCheck from './CustomerCheck.vue';
+import AddressForm from './customer/AddressForm.vue';
 
 const createListOpen = ref(false);
 const currentPath = ref(window.location.pathname);
@@ -300,10 +381,24 @@ const claimRequestsLoaded = ref(false);
 const claimRequestsError = ref('');
 const approvingRequestId = ref(null);
 const requestActionMessage = ref('');
+const pickupAddresses = ref([]);
+const addressesLoading = ref(false);
+const addressesLoaded = ref(false);
+const addressesError = ref('');
+const addressSuccess = ref('');
+const addressModalOpen = ref(false);
+const addressSaving = ref(false);
+const addressFormError = ref('');
+const deletingAddressId = ref(null);
+const selectedAddress = ref(null);
+const countryOptions = [
+    { code: 'GB', name: 'United Kingdom' },
+];
 
 const navItems = [
     { label: 'My info', path: '/account/info' },
     { label: 'My listing', path: '/account/listing' },
+    { label: 'My pickup address', path: '/account/pickup-address' },
     { label: 'My Claim Requests', path: '/account/claim-requests' },
 ];
 const listingStatusFilters = [
@@ -325,6 +420,10 @@ const activeSection = computed(() => {
 
     if (currentPath.value === '/account/claim-requests') {
         return 'claimRequests';
+    }
+
+    if (currentPath.value === '/account/pickup-address') {
+        return 'pickupAddresses';
     }
 
     return 'info';
@@ -599,8 +698,181 @@ async function approveRequest(requestId) {
     }
 }
 
+async function loadPickupAddresses(force = false) {
+    if (addressesLoading.value || (! force && addressesLoaded.value)) {
+        return;
+    }
+
+    addressesLoading.value = true;
+    addressesError.value = '';
+
+    try {
+        const response = await window.axios.post('/graphql', {
+            query: `{
+                getMyAddress {
+                    pickup_address_id
+                    customer_id
+                    name
+                    phone
+                    address_line_1
+                    address_line_2
+                    city
+                    county
+                    postcode
+                    country
+                }
+            }`,
+        });
+
+        const firstError = response.data?.errors?.[0]?.message;
+
+        if (firstError) {
+            addressesError.value = firstError;
+
+            return;
+        }
+
+        pickupAddresses.value = response.data?.data?.getMyAddress ?? [];
+        addressesLoaded.value = true;
+    } catch (requestError) {
+        addressesError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Pickup addresses could not be loaded.';
+    } finally {
+        addressesLoading.value = false;
+    }
+}
+
+function openAddressModal(address = null) {
+    addressFormError.value = '';
+    selectedAddress.value = address;
+    addressModalOpen.value = true;
+}
+
+function closeAddressModal() {
+    if (addressSaving.value) {
+        return;
+    }
+
+    addressModalOpen.value = false;
+    addressFormError.value = '';
+    selectedAddress.value = null;
+}
+
+async function saveAddress(addressInput) {
+    addressSaving.value = true;
+    addressFormError.value = '';
+    addressesError.value = '';
+    addressSuccess.value = '';
+
+    try {
+        const response = await window.axios.post('/graphql', {
+            query: `mutation AddAddress($input: AddAddressInput!) {
+                addAddress(input: $input) {
+                    success
+                    message
+                    address {
+                        pickup_address_id
+                    }
+                }
+            }`,
+            variables: {
+                input: addressInput,
+            },
+        });
+
+        const firstError = response.data?.errors?.[0]?.message;
+
+        if (firstError) {
+            addressFormError.value = firstError;
+
+            return;
+        }
+
+        addressSuccess.value = response.data?.data?.addAddress?.message ?? 'Pickup address saved.';
+        addressModalOpen.value = false;
+        selectedAddress.value = null;
+        addressesLoaded.value = false;
+        await loadPickupAddresses(true);
+    } catch (requestError) {
+        addressFormError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Pickup address could not be saved.';
+    } finally {
+        addressSaving.value = false;
+    }
+}
+
+async function deletePickupAddress(addressId) {
+    if (! window.confirm('Delete this pickup address?')) {
+        return;
+    }
+
+    deletingAddressId.value = Number(addressId);
+    addressesError.value = '';
+    addressSuccess.value = '';
+
+    try {
+        const response = await window.axios.post('/graphql', {
+            query: `mutation DeleteAddress($pickup_address_id: Int!) {
+                deleteAddress(pickup_address_id: $pickup_address_id) {
+                    success
+                    message
+                }
+            }`,
+            variables: {
+                pickup_address_id: Number(addressId),
+            },
+        });
+
+        const firstError = response.data?.errors?.[0]?.message;
+
+        if (firstError) {
+            addressesError.value = firstError;
+
+            return;
+        }
+
+        addressSuccess.value = response.data?.data?.deleteAddress?.message ?? 'Pickup address deleted.';
+        addressesLoaded.value = false;
+        await loadPickupAddresses(true);
+    } catch (requestError) {
+        addressesError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Pickup address could not be deleted.';
+    } finally {
+        deletingAddressId.value = null;
+    }
+}
+
 function productNames(listing) {
     return listing.products?.map((product) => product.product_name).join(', ') || '-';
+}
+
+function formatAddress(address) {
+    return [
+        address.address_line_1,
+        address.address_line_2,
+        address.city,
+        address.county,
+        address.postcode,
+        formatCountry(address.country),
+    ].filter(Boolean).join(', ');
+}
+
+function normalizeCountryCode(country) {
+    if (! country) {
+        return 'GB';
+    }
+
+    if (country === 'United Kingdom') {
+        return 'GB';
+    }
+
+    const code = String(country).toUpperCase();
+
+    return countryOptions.some((option) => option.code === code) ? code : 'GB';
+}
+
+function formatCountry(country) {
+    const code = normalizeCountryCode(country);
+    const countryOption = countryOptions.find((option) => option.code === code);
+
+    return countryOption ? `${countryOption.name} (${countryOption.code})` : code;
 }
 
 function listingStatusLabel(status) {
@@ -653,6 +925,10 @@ watch(activeSection, (section) => {
 
     if (section === 'claimRequests') {
         loadMyClaimRequests();
+    }
+
+    if (section === 'pickupAddresses') {
+        loadPickupAddresses();
     }
 }, { immediate: true });
 

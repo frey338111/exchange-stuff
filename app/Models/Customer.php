@@ -37,4 +37,9 @@ class Customer extends Model
     {
         return $this->hasMany(ClaimRequest::class, 'customer_id', 'customer_id');
     }
+
+    public function pickupAddresses(): HasMany
+    {
+        return $this->hasMany(PickupAddress::class, 'customer_id', 'customer_id');
+    }
 }

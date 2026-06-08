@@ -1,6 +1,6 @@
 <template>
     <CustomerCheck v-slot="{ customer, setCustomer, clearCustomer }">
-        <div v-if="customer" :class="containerClass(customer)">
+        <div v-if="customer && isMobile" :class="containerClass(customer)">
             <span :class="nameClass">
                 {{ customer.name }}
             </span>
@@ -15,6 +15,45 @@
             >
                 {{ logoutSubmitting ? 'Logging out...' : 'Logout' }}
             </button>
+        </div>
+
+        <div
+            v-else-if="customer"
+            class="relative hidden md:block"
+            @mouseenter="accountMenuOpen = true"
+            @mouseleave="accountMenuOpen = false"
+            @focusin="accountMenuOpen = true"
+            @focusout="closeAccountMenuOnFocusOut"
+        >
+            <button
+                type="button"
+                class="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-950"
+                :aria-expanded="accountMenuOpen"
+                aria-haspopup="true"
+                @click="accountMenuOpen = !accountMenuOpen"
+            >
+                <span>{{ customer.name }}</span>
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                </svg>
+            </button>
+
+            <div
+                v-if="accountMenuOpen"
+                class="absolute right-0 top-full z-30 min-w-44 rounded-md border border-gray-200 bg-white py-2 shadow-lg"
+            >
+                <a href="/account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-950">
+                    My account
+                </a>
+                <button
+                    type="button"
+                    class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-950 disabled:cursor-not-allowed disabled:opacity-70"
+                    :disabled="logoutSubmitting"
+                    @click="logoutCustomer(clearCustomer)"
+                >
+                    {{ logoutSubmitting ? 'Logging out...' : 'Logout' }}
+                </button>
+            </div>
         </div>
 
         <div v-else :class="containerClass(customer)">
@@ -130,6 +169,7 @@ const authSubmitting = ref(false);
 const authError = ref('');
 const authSuccess = ref('');
 const logoutSubmitting = ref(false);
+const accountMenuOpen = ref(false);
 const authForm = ref({
     name: '',
     email: '',
@@ -202,6 +242,12 @@ function closeAuthForm() {
     authError.value = '';
     authSuccess.value = '';
     window.history.pushState({}, '', '/');
+}
+
+function closeAccountMenuOnFocusOut(event) {
+    if (! event.currentTarget.contains(event.relatedTarget)) {
+        accountMenuOpen.value = false;
+    }
 }
 
 async function submitAuthForm(setCustomer, clearCustomer) {

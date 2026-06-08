@@ -22,6 +22,7 @@ class GetProductResponseBuilder
             'description' => $product->description,
             'category_title' => $product->category?->category_title,
             'condition_title' => $product->productCondition?->condition_title,
+            'condition_description' => $product->productCondition?->description,
             'date_added' => $listing?->created_at?->toDateTimeString(),
             'listing_notes' => $listing?->notes,
             'has_claim_request' => $data->hasClaimRequest,

@@ -28,7 +28,7 @@ class GetProduct
             ])
             ->where('url_key', $args['url_key'])
             ->where('status', true)
-            ->whereHas('listings', fn ($query) => $query->where('listing.status', Listing::STATUS_LIVE))
+            ->whereHas('listings', fn ($query) => $query->whereIn('listing.status', [Listing::STATUS_LIVE, Listing::STATUS_REQUESTED]))
             ->first();
 
         if (! $product) {

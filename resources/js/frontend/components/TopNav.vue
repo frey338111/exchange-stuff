@@ -47,6 +47,8 @@
                         </div>
                     </template>
                 </div>
+
+                <QuickSearchBox class="hidden w-72 md:block" />
             </div>
 
             <div class="flex items-center gap-2">
@@ -135,6 +137,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import CustomerSessionNav from './CustomerSessionNav.vue';
+import QuickSearchBox from './listing/QuickSearchBox.vue';
 import { useTopNav } from '../composables/useTopNav';
 
 const appName = 'Exchange Stuff';
