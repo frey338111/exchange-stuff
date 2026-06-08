@@ -1,7 +1,7 @@
 <template>
     <div
         class="min-h-screen text-gray-900"
-        style="background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #ffffff 70%), linear-gradient(to right, #dcfce7 0%, #dbeafe 100%);"
+        style="background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #ffffff 74%), linear-gradient(to right, #8fc9ec 0%, #b8dff3 42%, #b9dd87 100%);"
     >
         <TopNav />
         <main>

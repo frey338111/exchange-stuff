@@ -9,6 +9,8 @@ type Query {
   getMyListing(status: Int): [Listing!]!
   getMyListingDetail(listing_id: Int!): Listing!
   getMyClaimRequests: [ClaimRequest!]!
+  getMySentClaimRequests: [ClaimRequest!]!
+  getMySentClaimRequestDetail(request_id: Int!): ClaimRequest!
   getMyAddress: [PickupAddress!]!
   quickSearch(searchItem: String!): [QuickSearchProduct!]!
   getProduct(url_key: String!): ProductDetail
@@ -28,7 +30,8 @@ type Mutation {
   logoutCustomer: Boolean!
   createList(input: CreateListInput!): CreateListPayload!
   claimItem(input: ClaimItemInput!): ClaimItemPayload!
-  approveClaimRequest(request_id: Int!): ClaimItemPayload!
+  processClaimRequest(input: ProcessClaimRequestInput!): ClaimItemPayload!
+  respondToAmendedClaimRequest(input: RespondToAmendedClaimRequestInput!): ClaimItemPayload!
   addAddress(input: AddAddressInput!): AddAddressPayload!
   deleteAddress(pickup_address_id: Int!): DeleteAddressPayload!
 }
@@ -77,6 +80,7 @@ type Listing {
 type Product {
   product_id: ID!
   product_name: String!
+  url_key: String
   description: String
   category_id: ID!
   condition: Int!
@@ -142,6 +146,16 @@ type ClaimRequest {
   customer: Customer
   listing: Listing
   product: Product
+  messages: [ClaimRequestMessage!]!
+}
+
+type ClaimRequestMessage {
+  id: ID!
+  request_id: ID!
+  customer_id: ID!
+  message: String!
+  created_at: String!
+  customer: Customer
 }
 
 type PickupAddress {
@@ -244,6 +258,22 @@ input ClaimItemInput {
   listing_id: Int!
   product_id: Int!
   notes: String
+  pickup_date: String
+  pickup_slot: String
+}
+
+input ProcessClaimRequestInput {
+  request_id: Int!
+  action: String!
+  message: String
+  stored_address_id: Int
+  pickup_date: String
+  pickup_slot: String
+}
+
+input RespondToAmendedClaimRequestInput {
+  request_id: Int!
+  message: String!
   pickup_date: String
   pickup_slot: String
 }

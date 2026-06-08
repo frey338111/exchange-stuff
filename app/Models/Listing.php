@@ -14,8 +14,7 @@ class Listing extends Model
     public const STATUS_PENDING = 0;
     public const STATUS_LIVE = 1;
     public const STATUS_REJECTED = 2;
-    public const STATUS_REQUESTED = 3;
-    public const STATUS_ACCEPTED = 4;
+    public const STATUS_COMPLETED = 3;
 
     protected $table = 'listing';
 

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\ClaimRequest;
+use App\Models\ClaimRequestMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -16,7 +17,7 @@ class RequestRejectMail extends Mailable
 
     public function __construct(
         public readonly ClaimRequest $claimRequest,
-        public readonly string $eventMessage,
+        public readonly ?ClaimRequestMessage $claimRequestMessage,
     ) {
     }
 
@@ -33,6 +34,10 @@ class RequestRejectMail extends Mailable
     {
         return new Content(
             view: 'emails.request-reject',
+            with: [
+                'claimRequest' => $this->claimRequest,
+                'claimRequestMessage' => $this->claimRequestMessage,
+            ],
         );
     }
 }

@@ -2,8 +2,12 @@
     <header class="border-b border-gray-200 bg-white">
         <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div class="flex items-center gap-8">
-                <a href="/" class="text-base font-semibold text-gray-900">
-                    {{ appName }}
+                <a href="/" class="inline-flex items-center">
+                    <img
+                        :src="logoUrl"
+                        alt="Exchange Stuff"
+                        class="h-10 w-auto"
+                    >
                 </a>
 
                 <div class="hidden items-center gap-1 md:flex">
@@ -140,8 +144,8 @@ import CustomerSessionNav from './CustomerSessionNav.vue';
 import QuickSearchBox from './listing/QuickSearchBox.vue';
 import { useTopNav } from '../composables/useTopNav';
 
-const appName = 'Exchange Stuff';
 const { categories, error, loading, loadTopNav } = useTopNav();
+const logoUrl = '/storage/logo.png';
 const mobileOpen = ref(false);
 const openDropdown = ref(null);
 const openMobileCategory = ref(null);

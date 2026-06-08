@@ -23,12 +23,12 @@ class GetProduct
                 'productCondition',
                 'productGalleries' => fn ($query) => $query->where('image_type', '!=', 'thumbnail'),
                 'listings' => fn ($query) => $query
-                    ->wherein('listing.status', [Listing::STATUS_LIVE,Listing::STATUS_REQUESTED])
+                    ->where('listing.status', Listing::STATUS_LIVE)
                     ->orderByDesc('listing.created_at'),
             ])
             ->where('url_key', $args['url_key'])
             ->where('status', true)
-            ->whereHas('listings', fn ($query) => $query->whereIn('listing.status', [Listing::STATUS_LIVE, Listing::STATUS_REQUESTED]))
+            ->whereHas('listings', fn ($query) => $query->where('listing.status', Listing::STATUS_LIVE))
             ->first();
 
         if (! $product) {

@@ -2,15 +2,15 @@
     $productName = $claimRequest->product?->product_name ?? 'item';
     $pickupDate = $claimRequest->pickup_date?->toDateString() ?? 'Decide by seller';
     $pickupSlot = $claimRequest->timeslot ?? 'Decide by seller';
-    $title = "Request accepted {$claimRequest->request_id}";
+    $title = "Request update {$claimRequest->request_id}";
 @endphp
 
 @include('emails.partials.header', ['title' => $title])
 
-<p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #4b5563;">Request accepted</p>
+<p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #4b5563;">Request update</p>
 
 <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; color: #111827;">
-    Your request for {{ $productName }} has been accepted
+    Request for {{ $productName }} has an update
 </h1>
 
 @if (($claimRequestMessage ?? null)?->message)

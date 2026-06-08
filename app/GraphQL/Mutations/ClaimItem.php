@@ -71,10 +71,6 @@ class ClaimItem
             ->first();
 
         if ($claimRequest) {
-            Listing::query()
-                ->where('listing_id', $input['listing_id'])
-                ->update(['status' => Listing::STATUS_REQUESTED]);
-
             return [
                 'success' => true,
                 'message' => 'Your claim request is waiting for seller response.',
@@ -91,10 +87,6 @@ class ClaimItem
             'timeslot' => $input['pickup_slot'] ?? null,
             'status' => ClaimRequest::STATUS_PENDING,
         ]);
-
-        Listing::query()
-            ->where('listing_id', $input['listing_id'])
-            ->update(['status' => Listing::STATUS_REQUESTED]);
 
         event(new ClaimRequestCreated(
             requestId: $claimRequest->request_id,

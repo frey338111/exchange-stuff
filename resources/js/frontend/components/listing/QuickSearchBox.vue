@@ -1,13 +1,13 @@
 <template>
     <div class="relative">
-        <label for="top_nav_search" class="sr-only">Search products</label>
+        <label for="top_nav_search" class="sr-only">Search stuff</label>
         <input
             id="top_nav_search"
             v-model="searchText"
             type="search"
             autocomplete="off"
             class="block w-full rounded-md border-gray-300 py-2 pl-3 pr-9 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="Search products"
+            placeholder="Search stuff"
             @focus="searchFocused = true"
             @blur="hideSearchResults()"
         >

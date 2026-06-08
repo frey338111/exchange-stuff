@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\RequestRejectMail;
 use App\Models\ClaimRequest;
+use App\Models\ClaimRequestMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,7 +21,6 @@ class SendRequestRejectEmail implements ShouldQueue
 
     public function __construct(
         private readonly int $requestId,
-        private readonly string $eventMessage,
     ) {
     }
 
@@ -34,7 +34,12 @@ class SendRequestRejectEmail implements ShouldQueue
             return;
         }
 
+        $claimRequestMessage = ClaimRequestMessage::query()
+            ->where('request_id', $claimRequest->request_id)
+            ->latest('id')
+            ->first();
+
         Mail::to($claimRequest->customer->email, $claimRequest->customer->name)
-            ->send(new RequestRejectMail($claimRequest, $this->eventMessage));
+            ->send(new RequestRejectMail($claimRequest, $claimRequestMessage));
     }
 }

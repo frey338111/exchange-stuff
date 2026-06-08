@@ -11,11 +11,17 @@
     Your request for {{ $productName }} is not available anymore
 </h1>
 
-<p style="margin: 16px 0 0; font-size: 14px; line-height: 22px; color: #4b5563;">
-    {{ $eventMessage }}
-</p>
+@if (($claimRequestMessage ?? null)?->message)
+    <p style="margin: 16px 0 0; font-size: 14px; line-height: 22px; color: #4b5563; white-space: pre-line;">
+        {{ $claimRequestMessage->message }}
+    </p>
+@endif
 
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 24px; border-collapse: collapse; font-size: 14px;">
+    <tr>
+        <th align="left" style="width: 160px; border-top: 1px solid #e5e7eb; padding: 12px 12px 12px 0; color: #4b5563; font-weight: 600;">Notes</th>
+        <td style="border-top: 1px solid #e5e7eb; padding: 12px 0; color: #111827;">{{ $claimRequest->notes ?: '-' }}</td>
+    </tr>
     <tr>
         <th align="left" style="width: 160px; border-top: 1px solid #e5e7eb; padding: 12px 12px 12px 0; color: #4b5563; font-weight: 600;">Request ID</th>
         <td style="border-top: 1px solid #e5e7eb; padding: 12px 0; color: #111827;">{{ $claimRequest->request_id }}</td>

@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Events\ClaimRequestAccepted;
+use App\Events\ClaimRequestAmended;
 use App\Events\ClaimRequestCreated;
 use App\Events\ClaimRequestRejected;
 use App\Jobs\SendClaimRequestCreatedEmail;
+use App\Jobs\SendRequestAmendEmail;
 use App\Jobs\SendRequestApprovalEmail;
 use App\Jobs\SendRequestRejectEmail;
 use Illuminate\Support\Facades\Event;
@@ -31,11 +33,15 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(ClaimRequestAccepted::class, function (ClaimRequestAccepted $event): void {
-            SendRequestApprovalEmail::dispatch($event->requestId, $event->message);
+            SendRequestApprovalEmail::dispatch($event->requestId);
         });
 
         Event::listen(ClaimRequestRejected::class, function (ClaimRequestRejected $event): void {
-            SendRequestRejectEmail::dispatch($event->requestId, $event->message);
+            SendRequestRejectEmail::dispatch($event->requestId);
+        });
+
+        Event::listen(ClaimRequestAmended::class, function (ClaimRequestAmended $event): void {
+            SendRequestAmendEmail::dispatch($event->requestId);
         });
     }
 }

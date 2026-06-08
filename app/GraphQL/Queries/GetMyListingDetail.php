@@ -21,7 +21,13 @@ class GetMyListingDetail
         }
 
         $listing = Listing::query()
-            ->with(['products.category', 'products.productCondition', 'claimRequests.customer', 'claimRequests.product'])
+            ->with([
+                'products.category',
+                'products.productCondition',
+                'claimRequests.customer',
+                'claimRequests.product',
+                'claimRequests.messages.customer',
+            ])
             ->where('customer_id', $request->session()->get('customer_id'))
             ->where('listing_id', $args['listing_id'])
             ->first();

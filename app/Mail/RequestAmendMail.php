@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RequestApprovalMail extends Mailable
+class RequestAmendMail extends Mailable
 {
     use Queueable;
     use SerializesModels;
@@ -26,14 +26,14 @@ class RequestApprovalMail extends Mailable
         $productName = $this->claimRequest->product?->product_name ?? 'item';
 
         return new Envelope(
-            subject: "Your request for {$productName} has been accepted",
+            subject: "Request for {$productName} has an update",
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.request-approval',
+            view: 'emails.request-amend',
             with: [
                 'claimRequest' => $this->claimRequest,
                 'claimRequestMessage' => $this->claimRequestMessage,

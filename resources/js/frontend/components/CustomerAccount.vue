@@ -125,215 +125,54 @@
                         </p>
                     </div>
 
-                    <div v-else-if="activeSection === 'listingDetail'" class="max-w-5xl">
-                        <button
-                            type="button"
-                            class="text-sm font-medium text-gray-700 hover:text-gray-950"
-                            @click="navigateTo('/account/listing')"
-                        >
-                            Back to my listing
-                        </button>
+                    <ListingDetail
+                        v-else-if="activeSection === 'listingDetail'"
+                        :listing="listingDetail"
+                        :loading="listingDetailLoading"
+                        :error="listingDetailError"
+                        :action-message="requestActionMessage"
+                        :approving-request-id="approvingRequestId"
+                        @back="navigateTo('/account/listing')"
+                        @respond="openResponseModal"
+                    />
 
-                        <div v-if="listingDetailLoading" class="mt-6 space-y-3">
-                            <div class="h-16 animate-pulse rounded-md bg-gray-100"></div>
-                            <div class="h-32 animate-pulse rounded-md bg-gray-100"></div>
-                        </div>
+                    <MyAddress
+                        v-else-if="activeSection === 'pickupAddresses'"
+                        :addresses="pickupAddresses"
+                        :loading="addressesLoading"
+                        :error="addressesError"
+                        :success="addressSuccess"
+                        :deleting-address-id="deletingAddressId"
+                        :country-options="countryOptions"
+                        @add="openAddressModal()"
+                        @edit="openAddressModal"
+                        @delete="deletePickupAddress"
+                    />
 
-                        <p v-else-if="listingDetailError" class="mt-6 text-sm text-red-600">
-                            {{ listingDetailError }}
-                        </p>
+                    <ReceivedRequests
+                        v-else-if="activeSection === 'claimRequests'"
+                        :requests="myClaimRequests"
+                        :loading="claimRequestsLoading"
+                        :error="claimRequestsError"
+                        @view="(listingId) => navigateTo(`/account/listing/${listingId}`)"
+                    />
 
-                        <div v-else-if="listingDetail" class="mt-6 space-y-8">
-                            <header class="border-y border-gray-200 py-5">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                    <div>
-                                        <h2 class="text-xl font-semibold text-gray-950">Listing #{{ listingDetail.listing_id }}</h2>
-                                        <p class="mt-1 text-sm text-gray-600">{{ productNames(listingDetail) }}</p>
-                                    </div>
-                                    <span class="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                                        {{ listingStatusLabel(listingDetail.status) }}
-                                    </span>
-                                </div>
-                                <p v-if="listingDetail.notes" class="mt-4 whitespace-pre-line text-sm text-gray-700">
-                                    {{ listingDetail.notes }}
-                                </p>
-                            </header>
+                    <SentClaimRequests
+                        v-else-if="activeSection === 'sentClaimRequests'"
+                        :requests="sentClaimRequests"
+                        :loading="sentClaimRequestsLoading"
+                        :error="sentClaimRequestsError"
+                        @view="(requestId) => navigateTo(`/account/request-send/${requestId}`)"
+                    />
 
-                            <section>
-                                <h3 class="text-base font-semibold text-gray-950">Product info</h3>
-                                <div class="mt-4 grid gap-4 md:grid-cols-2">
-                                    <div v-for="product in listingDetail.products" :key="product.product_id" class="rounded-md border border-gray-200 bg-white p-4">
-                                        <p class="text-sm font-medium text-gray-600">{{ product.category?.category_title ?? 'Product' }}</p>
-                                        <h4 class="mt-1 text-lg font-semibold text-gray-950">{{ product.product_name }}</h4>
-                                        <dl class="mt-4 space-y-2 text-sm">
-                                            <div class="flex gap-2">
-                                                <dt class="font-medium text-gray-600">Condition:</dt>
-                                                <dd class="text-gray-900">{{ product.productCondition?.condition_title ?? '-' }}</dd>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <dt class="font-medium text-gray-600">Description:</dt>
-                                                <dd class="text-gray-900">{{ product.description || '-' }}</dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section>
-                                <div class="flex items-center justify-between gap-4">
-                                    <h3 class="text-base font-semibold text-gray-950">Requests</h3>
-                                    <p v-if="requestActionMessage" class="text-sm text-green-700">{{ requestActionMessage }}</p>
-                                </div>
-
-                                <div v-if="listingDetail.claimRequests.length" class="mt-4 divide-y divide-gray-200 border-y border-gray-200">
-                                    <div v-for="request in listingDetail.claimRequests" :key="request.request_id" class="py-4">
-                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                            <div>
-                                                <p class="text-sm font-semibold text-gray-950">
-                                                    Request #{{ request.request_id }} from {{ request.customer?.name ?? 'Customer' }}
-                                                </p>
-                                                <p class="mt-1 text-sm text-gray-700">{{ request.product?.product_name ?? '-' }}</p>
-                                                <p v-if="request.pickup_date || request.timeslot" class="mt-1 text-sm text-gray-600">
-                                                    {{ formatDate(request.pickup_date) }} <span v-if="request.timeslot">- {{ request.timeslot }}</span>
-                                                </p>
-                                                <p v-if="request.notes" class="mt-2 whitespace-pre-line text-sm text-gray-700">{{ request.notes }}</p>
-                                            </div>
-                                            <div class="flex shrink-0 items-center gap-3">
-                                                <span class="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-                                                    {{ requestStatusLabel(request.status) }}
-                                                </span>
-                                                <button
-                                                    v-if="canApproveRequests"
-                                                    type="button"
-                                                    class="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                                                    :disabled="approvingRequestId === Number(request.request_id)"
-                                                    @click="approveRequest(request.request_id)"
-                                                >
-                                                    Approve
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <p v-else class="mt-4 text-sm text-gray-600">
-                                    No requests yet.
-                                </p>
-                            </section>
-                        </div>
-                    </div>
-
-                    <div v-else-if="activeSection === 'pickupAddresses'" class="max-w-5xl">
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <h2 class="text-lg font-semibold text-gray-950">My pickup address</h2>
-
-                            <button
-                                type="button"
-                                class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-                                @click="openAddressModal()"
-                            >
-                                Add New
-                            </button>
-                        </div>
-
-                        <p v-if="addressSuccess" class="mt-4 text-sm text-green-700">
-                            {{ addressSuccess }}
-                        </p>
-
-                        <div v-if="addressesLoading" class="mt-6 space-y-3">
-                            <div class="h-12 animate-pulse rounded-md bg-gray-100"></div>
-                            <div class="h-12 animate-pulse rounded-md bg-gray-100"></div>
-                        </div>
-
-                        <p v-else-if="addressesError" class="mt-6 text-sm text-red-600">
-                            {{ addressesError }}
-                        </p>
-
-                        <div v-else-if="pickupAddresses.length" class="mt-6 overflow-x-auto border-y border-gray-200">
-                            <table class="min-w-full divide-y divide-gray-200 text-left">
-                                <thead>
-                                    <tr>
-                                        <th class="py-3 pe-4 text-xs font-semibold uppercase text-gray-500">Name</th>
-                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Address</th>
-                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Phone</th>
-                                        <th class="py-3 ps-4 text-right text-xs font-semibold uppercase text-gray-500">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200">
-                                    <tr v-for="address in pickupAddresses" :key="address.pickup_address_id">
-                                        <td class="py-4 pe-4 text-sm font-medium text-gray-950">{{ address.name || '-' }}</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">{{ formatAddress(address) }}</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">{{ address.phone || '-' }}</td>
-                                        <td class="py-4 ps-4 text-right text-sm">
-                                            <div class="flex justify-end gap-3">
-                                                <button
-                                                    type="button"
-                                                    class="font-medium text-gray-900 hover:text-gray-600"
-                                                    @click="openAddressModal(address)"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="font-medium text-red-700 hover:text-red-600 disabled:cursor-not-allowed disabled:text-red-300"
-                                                    :disabled="deletingAddressId === Number(address.pickup_address_id)"
-                                                    @click="deletePickupAddress(address.pickup_address_id)"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <p v-else class="mt-6 text-sm text-gray-600">
-                            No pickup addresses found.
-                        </p>
-                    </div>
-
-                    <div v-else-if="activeSection === 'claimRequests'" class="max-w-5xl">
-                        <h2 class="text-lg font-semibold text-gray-950">My Claim Requests</h2>
-
-                        <div v-if="claimRequestsLoading" class="mt-6 space-y-3">
-                            <div class="h-12 animate-pulse rounded-md bg-gray-100"></div>
-                            <div class="h-12 animate-pulse rounded-md bg-gray-100"></div>
-                        </div>
-
-                        <p v-else-if="claimRequestsError" class="mt-6 text-sm text-red-600">
-                            {{ claimRequestsError }}
-                        </p>
-
-                        <div v-else-if="myClaimRequests.length" class="mt-6 overflow-x-auto border-y border-gray-200">
-                            <table class="min-w-full divide-y divide-gray-200 text-left">
-                                <thead>
-                                    <tr>
-                                        <th class="py-3 pe-4 text-xs font-semibold uppercase text-gray-500">Request ID</th>
-                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Listing</th>
-                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Product</th>
-                                        <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Pickup</th>
-                                        <th class="py-3 ps-4 text-xs font-semibold uppercase text-gray-500">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200">
-                                    <tr v-for="request in myClaimRequests" :key="request.request_id">
-                                        <td class="py-4 pe-4 text-sm font-medium text-gray-950">#{{ request.request_id }}</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">#{{ request.listing_id }}</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">{{ request.product?.product_name ?? '-' }}</td>
-                                        <td class="px-4 py-4 text-sm text-gray-700">
-                                            {{ formatDate(request.pickup_date) }} <span v-if="request.timeslot">- {{ request.timeslot }}</span>
-                                        </td>
-                                        <td class="py-4 ps-4 text-sm text-gray-700">{{ requestStatusLabel(request.status) }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <p v-else class="mt-6 text-sm text-gray-600">
-                            No claim requests yet.
-                        </p>
-                    </div>
+                    <SentClaimRequestDetail
+                        v-else-if="activeSection === 'sentClaimRequestDetail'"
+                        :request="sentClaimRequestDetail"
+                        :loading="sentClaimRequestDetailLoading"
+                        :error="sentClaimRequestDetailError"
+                        @back="navigateTo('/account/request-send')"
+                        @reply="openReplyModal"
+                    />
                 </section>
             </div>
 
@@ -355,14 +194,40 @@
             @close="closeAddressModal()"
             @save="saveAddress"
         />
+
+        <ApproveForm
+            v-if="customer && responseModalOpen && selectedClaimRequest"
+            :request="selectedClaimRequest"
+            :addresses="pickupAddresses"
+            :error="responseFormError"
+            :saving="approvingRequestId === Number(selectedClaimRequest.request_id)"
+            @close="closeResponseModal()"
+            @send="processClaimRequest"
+        />
+
+        <ClaimRequestReplyForm
+            v-if="customer && replyModalOpen && sentClaimRequestDetail"
+            :request="sentClaimRequestDetail"
+            :error="replyFormError"
+            :saving="replySaving"
+            @close="closeReplyModal()"
+            @send="replyToAmendedClaimRequest"
+        />
     </CustomerCheck>
 </template>
 
 <script setup>
 import { computed, h, onMounted, onUnmounted, ref, watch } from 'vue';
+import ClaimRequestReplyForm from './customer/ClaimRequestReplyForm.vue';
 import CreateListModal from './CreateListModal.vue';
 import CustomerCheck from './CustomerCheck.vue';
 import AddressForm from './customer/AddressForm.vue';
+import ApproveForm from './customer/approveForm.vue';
+import ListingDetail from './customer/ListingDetail.vue';
+import MyAddress from './customer/MyAddress.vue';
+import SentClaimRequestDetail from './customer/SentClaimRequestDetail.vue';
+import ReceivedRequests from './customer/ReceivedRequests.vue';
+import SentClaimRequests from './customer/SentClaimRequests.vue';
 
 const createListOpen = ref(false);
 const currentPath = ref(window.location.pathname);
@@ -379,8 +244,21 @@ const myClaimRequests = ref([]);
 const claimRequestsLoading = ref(false);
 const claimRequestsLoaded = ref(false);
 const claimRequestsError = ref('');
+const sentClaimRequests = ref([]);
+const sentClaimRequestsLoading = ref(false);
+const sentClaimRequestsLoaded = ref(false);
+const sentClaimRequestsError = ref('');
+const sentClaimRequestDetail = ref(null);
+const sentClaimRequestDetailLoading = ref(false);
+const sentClaimRequestDetailError = ref('');
+const replyModalOpen = ref(false);
+const replySaving = ref(false);
+const replyFormError = ref('');
 const approvingRequestId = ref(null);
 const requestActionMessage = ref('');
+const responseModalOpen = ref(false);
+const responseFormError = ref('');
+const selectedClaimRequest = ref(null);
 const pickupAddresses = ref([]);
 const addressesLoading = ref(false);
 const addressesLoaded = ref(false);
@@ -399,17 +277,21 @@ const navItems = [
     { label: 'My info', path: '/account/info' },
     { label: 'My listing', path: '/account/listing' },
     { label: 'My pickup address', path: '/account/pickup-address' },
-    { label: 'My Claim Requests', path: '/account/claim-requests' },
+    { label: 'Request Received ', path: '/account/claim-requests' },
+    { label: 'Request send', path: '/account/request-send' },
 ];
 const listingStatusFilters = [
     { label: 'All', value: '' },
     { label: 'Pending', value: 0 },
     { label: 'Live', value: 1 },
     { label: 'Rejected', value: 2 },
-    { label: 'Requested', value: 3 },
-    { label: 'Accepted', value: 4 },
+    { label: 'Completed', value: 3 },
 ];
 const activeSection = computed(() => {
+    if (currentPath.value.startsWith('/account/request-send/')) {
+        return 'sentClaimRequestDetail';
+    }
+
     if (currentPath.value.startsWith('/account/listing/')) {
         return 'listingDetail';
     }
@@ -420,6 +302,10 @@ const activeSection = computed(() => {
 
     if (currentPath.value === '/account/claim-requests') {
         return 'claimRequests';
+    }
+
+    if (currentPath.value === '/account/request-send') {
+        return 'sentClaimRequests';
     }
 
     if (currentPath.value === '/account/pickup-address') {
@@ -433,12 +319,11 @@ const activeListingId = computed(() => {
 
     return match ? Number(match[1]) : null;
 });
-const canApproveRequests = computed(() => {
-    const requests = listingDetail.value?.claimRequests ?? [];
+const activeSentClaimRequestId = computed(() => {
+    const match = currentPath.value.match(/^\/account\/request-send\/(\d+)/);
 
-    return requests.length > 0 && requests.every((request) => Number(request.status) === 0);
+    return match ? Number(match[1]) : null;
 });
-
 function openCreateListModal() {
     createListOpen.value = true;
 }
@@ -588,6 +473,15 @@ async function loadListingDetail() {
                         product {
                             product_name
                         }
+                        messages {
+                            id
+                            customer_id
+                            message
+                            created_at
+                            customer {
+                                name
+                            }
+                        }
                     }
                 }
             }`,
@@ -632,6 +526,7 @@ async function loadMyClaimRequests(force = false) {
                     status
                     product {
                         product_name
+                        url_key
                     }
                 }
             }`,
@@ -654,19 +549,135 @@ async function loadMyClaimRequests(force = false) {
     }
 }
 
-async function approveRequest(requestId) {
-    if (! window.confirm('Approve this claim request? Other pending requests for this listing will be rejected.')) {
+async function loadSentClaimRequests(force = false) {
+    if (sentClaimRequestsLoading.value || (! force && sentClaimRequestsLoaded.value)) {
         return;
     }
 
-    approvingRequestId.value = Number(requestId);
-    requestActionMessage.value = '';
-    listingDetailError.value = '';
+    sentClaimRequestsLoading.value = true;
+    sentClaimRequestsError.value = '';
 
     try {
         const response = await window.axios.post('/graphql', {
-            query: `mutation ApproveClaimRequest($request_id: Int!) {
-                approveClaimRequest(request_id: $request_id) {
+            query: `{
+                getMySentClaimRequests {
+                    request_id
+                    listing_id
+                    product_id
+                    pickup_date
+                    timeslot
+                    status
+                    product {
+                        product_name
+                        url_key
+                    }
+                }
+            }`,
+        });
+
+        const firstError = response.data?.errors?.[0]?.message;
+
+        if (firstError) {
+            sentClaimRequestsError.value = firstError;
+
+            return;
+        }
+
+        sentClaimRequests.value = response.data?.data?.getMySentClaimRequests ?? [];
+        sentClaimRequestsLoaded.value = true;
+    } catch (requestError) {
+        sentClaimRequestsError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Sent requests could not be loaded.';
+    } finally {
+        sentClaimRequestsLoading.value = false;
+    }
+}
+
+async function loadSentClaimRequestDetail() {
+    if (! activeSentClaimRequestId.value) {
+        return;
+    }
+
+    sentClaimRequestDetailLoading.value = true;
+    sentClaimRequestDetailError.value = '';
+
+    try {
+        const response = await window.axios.post('/graphql', {
+            query: `query GetMySentClaimRequestDetail($request_id: Int!) {
+                getMySentClaimRequestDetail(request_id: $request_id) {
+                    request_id
+                    customer_id
+                    listing_id
+                    product_id
+                    notes
+                    pickup_date
+                    timeslot
+                    status
+                    product {
+                        product_id
+                        product_name
+                        description
+                        category {
+                            category_title
+                        }
+                        productCondition {
+                            condition_title
+                        }
+                    }
+                    messages {
+                        id
+                        customer_id
+                        message
+                        created_at
+                        customer {
+                            name
+                        }
+                    }
+                }
+            }`,
+            variables: {
+                request_id: activeSentClaimRequestId.value,
+            },
+        });
+
+        const firstError = response.data?.errors?.[0]?.message;
+
+        if (firstError) {
+            sentClaimRequestDetailError.value = firstError;
+
+            return;
+        }
+
+        sentClaimRequestDetail.value = response.data?.data?.getMySentClaimRequestDetail ?? null;
+    } catch (requestError) {
+        sentClaimRequestDetailError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Sent request could not be loaded.';
+    } finally {
+        sentClaimRequestDetailLoading.value = false;
+    }
+}
+
+function openReplyModal() {
+    replyFormError.value = '';
+    replyModalOpen.value = true;
+}
+
+function closeReplyModal() {
+    if (replySaving.value) {
+        return;
+    }
+
+    replyModalOpen.value = false;
+    replyFormError.value = '';
+}
+
+async function replyToAmendedClaimRequest(input) {
+    replySaving.value = true;
+    replyFormError.value = '';
+    sentClaimRequestDetailError.value = '';
+
+    try {
+        const response = await window.axios.post('/graphql', {
+            query: `mutation ReplyToAmendedClaimRequest($input: RespondToAmendedClaimRequestInput!) {
+                respondToAmendedClaimRequest(input: $input) {
                     success
                     message
                     claim_request {
@@ -676,23 +687,95 @@ async function approveRequest(requestId) {
                 }
             }`,
             variables: {
-                request_id: Number(requestId),
+                input,
             },
         });
 
         const firstError = response.data?.errors?.[0]?.message;
 
         if (firstError) {
-            listingDetailError.value = firstError;
+            replyFormError.value = firstError;
 
             return;
         }
 
-        requestActionMessage.value = response.data?.data?.approveClaimRequest?.message ?? 'Claim request approved.';
+        replyModalOpen.value = false;
+        sentClaimRequestsLoaded.value = false;
+        await loadSentClaimRequestDetail();
+    } catch (requestError) {
+        replyFormError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Reply could not be sent.';
+    } finally {
+        replySaving.value = false;
+    }
+}
+
+async function openResponseModal(request) {
+    if (addressesLoading.value) {
+        return;
+    }
+
+    listingDetailError.value = '';
+    responseFormError.value = '';
+    requestActionMessage.value = '';
+    selectedClaimRequest.value = request;
+
+    try {
+        await loadPickupAddresses(true);
+        responseModalOpen.value = true;
+    } catch (requestError) {
+        listingDetailError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Pickup addresses could not be loaded.';
+        selectedClaimRequest.value = null;
+    }
+}
+
+function closeResponseModal() {
+    if (approvingRequestId.value !== null) {
+        return;
+    }
+
+    responseModalOpen.value = false;
+    responseFormError.value = '';
+    selectedClaimRequest.value = null;
+}
+
+async function processClaimRequest(input) {
+    approvingRequestId.value = Number(input.request_id);
+    requestActionMessage.value = '';
+    listingDetailError.value = '';
+    responseFormError.value = '';
+
+    try {
+        const response = await window.axios.post('/graphql', {
+            query: `mutation ProcessClaimRequest($input: ProcessClaimRequestInput!) {
+                processClaimRequest(input: $input) {
+                    success
+                    message
+                    claim_request {
+                        request_id
+                        status
+                    }
+                }
+            }`,
+            variables: {
+                input,
+            },
+        });
+
+        const firstError = response.data?.errors?.[0]?.message;
+
+        if (firstError) {
+            responseFormError.value = firstError;
+
+            return;
+        }
+
+        requestActionMessage.value = response.data?.data?.processClaimRequest?.message ?? 'Claim request processed.';
+        responseModalOpen.value = false;
+        selectedClaimRequest.value = null;
         await loadListingDetail();
         claimRequestsLoaded.value = false;
     } catch (requestError) {
-        listingDetailError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Claim request could not be approved.';
+        responseFormError.value = requestError.response?.data?.errors?.[0]?.message ?? 'Claim request could not be processed.';
     } finally {
         approvingRequestId.value = null;
     }
@@ -843,55 +926,12 @@ function productNames(listing) {
     return listing.products?.map((product) => product.product_name).join(', ') || '-';
 }
 
-function formatAddress(address) {
-    return [
-        address.address_line_1,
-        address.address_line_2,
-        address.city,
-        address.county,
-        address.postcode,
-        formatCountry(address.country),
-    ].filter(Boolean).join(', ');
-}
-
-function normalizeCountryCode(country) {
-    if (! country) {
-        return 'GB';
-    }
-
-    if (country === 'United Kingdom') {
-        return 'GB';
-    }
-
-    const code = String(country).toUpperCase();
-
-    return countryOptions.some((option) => option.code === code) ? code : 'GB';
-}
-
-function formatCountry(country) {
-    const code = normalizeCountryCode(country);
-    const countryOption = countryOptions.find((option) => option.code === code);
-
-    return countryOption ? `${countryOption.name} (${countryOption.code})` : code;
-}
-
 function listingStatusLabel(status) {
     const labels = {
         0: 'Pending',
         1: 'Live',
         2: 'Rejected',
-        3: 'Requested',
-        4: 'Accepted',
-    };
-
-    return labels[Number(status)] ?? 'Pending';
-}
-
-function requestStatusLabel(status) {
-    const labels = {
-        0: 'Pending',
-        1: 'Accepted',
-        2: 'Rejected',
+        3: 'Completed',
     };
 
     return labels[Number(status)] ?? 'Pending';
@@ -927,10 +967,24 @@ watch(activeSection, (section) => {
         loadMyClaimRequests();
     }
 
+    if (section === 'sentClaimRequests') {
+        loadSentClaimRequests();
+    }
+
+    if (section === 'sentClaimRequestDetail') {
+        loadSentClaimRequestDetail();
+    }
+
     if (section === 'pickupAddresses') {
         loadPickupAddresses();
     }
 }, { immediate: true });
+
+watch(activeSentClaimRequestId, () => {
+    if (activeSection.value === 'sentClaimRequestDetail') {
+        loadSentClaimRequestDetail();
+    }
+});
 
 watch(activeListingId, () => {
     if (activeSection.value === 'listingDetail') {

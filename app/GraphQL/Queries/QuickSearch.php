@@ -21,7 +21,7 @@ class QuickSearch
             ->with(['productGalleries' => fn ($query) => $query->where('image_type', 'thumbnail')])
             ->where('status', true)
             ->whereFullText('product_name', $searchItem)
-            ->whereHas('listings', fn ($query) => $query->whereIn('listing.status', [Listing::STATUS_LIVE, Listing::STATUS_REQUESTED]))
+            ->whereHas('listings', fn ($query) => $query->where('listing.status', Listing::STATUS_LIVE))
             ->orderBy('product_name')
             ->limit(8)
             ->get()

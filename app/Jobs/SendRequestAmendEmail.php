@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Mail\RequestApprovalMail;
+use App\Mail\RequestAmendMail;
 use App\Models\ClaimRequest;
 use App\Models\ClaimRequestMessage;
 use Illuminate\Bus\Queueable;
@@ -12,7 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
 
-class SendRequestApprovalEmail implements ShouldQueue
+class SendRequestAmendEmail implements ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -39,7 +39,17 @@ class SendRequestApprovalEmail implements ShouldQueue
             ->latest('id')
             ->first();
 
-        Mail::to($claimRequest->customer->email, $claimRequest->customer->name)
-            ->send(new RequestApprovalMail($claimRequest, $claimRequestMessage));
+        $recipient = $claimRequest->customer;
+
+        if ($claimRequestMessage && (int) $claimRequestMessage->customer_id === (int) $claimRequest->customer_id) {
+            $recipient = $claimRequest->listing?->customer;
+        }
+
+        if (! $recipient?->email) {
+            return;
+        }
+
+        Mail::to($recipient->email, $recipient->name)
+            ->send(new RequestAmendMail($claimRequest, $claimRequestMessage));
     }
 }

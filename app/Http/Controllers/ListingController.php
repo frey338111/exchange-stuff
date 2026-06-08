@@ -163,7 +163,7 @@ class ListingController extends Controller
 
     private function statusName(?string $status): string
     {
-        return in_array($status, ['pending', 'live', 'rejected', 'requested', 'accepted'], true) ? $status : 'pending';
+        return in_array($status, ['pending', 'live', 'rejected', 'completed'], true) ? $status : 'pending';
     }
 
     private function statusValue(string $status): int
@@ -171,8 +171,7 @@ class ListingController extends Controller
         return match ($status) {
             'live' => Listing::STATUS_LIVE,
             'rejected' => Listing::STATUS_REJECTED,
-            'requested' => Listing::STATUS_REQUESTED,
-            'accepted' => Listing::STATUS_ACCEPTED,
+            'completed' => Listing::STATUS_COMPLETED,
             default => Listing::STATUS_PENDING,
         };
     }

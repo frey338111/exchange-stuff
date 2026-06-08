@@ -51,7 +51,7 @@ class GetCategoryProducts
             $childCategories = Category::query()
                 ->select(['category_id', 'category_title', 'url_key', 'description', 'category_image', 'parent_id'])
                 ->where('parent_id', $category->category_id)
-                ->wherein('status', [Listing::STATUS_LIVE,Listing::STATUS_REQUESTED])
+                ->wherein('status', [1])
                 ->orderBy('category_title')
                 ->get();
 
@@ -63,12 +63,15 @@ class GetCategoryProducts
 
         $listings = Listing::query()
             ->with([
+                'products' => fn ($query) => $query->where('product.status', true),
                 'products.category',
                 'products.productCondition',
                 'products.productGalleries' => fn ($query) => $query->where('image_type', 'thumbnail'),
             ])
-            ->whereIn('status', [Listing::STATUS_LIVE, Listing::STATUS_REQUESTED])
-            ->whereHas('products', fn ($query) => $query->whereIn('product.category_id', $categoryIds))
+            ->where('status', Listing::STATUS_LIVE)
+            ->whereHas('products', fn ($query) => $query
+                ->where('product.status', true)
+                ->whereIn('product.category_id', $categoryIds))
             ->orderByDesc('created_at')
             ->get();
 
