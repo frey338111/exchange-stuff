@@ -2,9 +2,11 @@
 
 namespace App\GraphQL\Mutations;
 
-use App\Events\ClaimRequestAccepted;
-use App\Events\ClaimRequestAmended;
-use App\Events\ClaimRequestRejected;
+use App\Events\Strategies\AcceptClaimRequestEventStrategy;
+use App\Events\Strategies\AmendClaimRequestEventStrategy;
+use App\Events\Strategies\ClaimRequestEventStrategy;
+use App\Events\Strategies\ClaimRequestEventStrategyProxy;
+use App\Events\Strategies\RejectClaimRequestEventStrategy;
 use App\Models\ClaimRequest;
 use App\Models\ClaimRequestMessage;
 use App\Models\PickupAddress;
@@ -15,6 +17,20 @@ use Illuminate\Validation\ValidationException;
 
 class ProcessClaimRequest
 {
+    /**
+     * @var array<string, ClaimRequestEventStrategy>
+     */
+    private array $strategies;
+
+    public function __construct()
+    {
+        $this->strategies = [
+            'accept' => new ClaimRequestEventStrategyProxy(AcceptClaimRequestEventStrategy::class),
+            'reject' => new ClaimRequestEventStrategyProxy(RejectClaimRequestEventStrategy::class),
+            'amend' => new ClaimRequestEventStrategyProxy(AmendClaimRequestEventStrategy::class),
+        ];
+    }
+
     /**
      * @throws ValidationException
      */
@@ -180,36 +196,6 @@ class ProcessClaimRequest
 
     private function dispatchEvents(string $action, ClaimRequest $claimRequest, string $message, array $rejectedRequestIds): void
     {
-        if ($action === 'accept') {
-            event(new ClaimRequestAccepted(
-                requestId: $claimRequest->request_id,
-                message: $message !== '' ? $message : 'Your request has been accepted. The item is reserved for you.',
-            ));
-
-            foreach ($rejectedRequestIds as $rejectedRequestId) {
-                event(new ClaimRequestRejected(
-                    requestId: $rejectedRequestId,
-                    message: 'the item you requested is not available anymore',
-                ));
-            }
-
-            return;
-        }
-
-        if ($action === 'reject') {
-            event(new ClaimRequestRejected(
-                requestId: $claimRequest->request_id,
-                message: $message !== '' ? $message : 'Your request has been rejected.',
-            ));
-
-            return;
-        }
-
-        if ($action === 'amend') {
-            event(new ClaimRequestAmended(
-                requestId: $claimRequest->request_id,
-                message: $message !== '' ? $message : 'Your request has been amended.',
-            ));
-        }
+        $this->strategies[$action]->dispatch($claimRequest, $message, $rejectedRequestIds);
     }
 }
