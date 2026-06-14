@@ -3,22 +3,23 @@
 namespace App\GraphQL\Queries;
 
 use App\Models\Listing;
+use App\Services\ValidationService;
 use Illuminate\Validation\ValidationException;
 
 class GetMyListingDetail
 {
+    public function __construct(private readonly ValidationService $validationService) {}
+
     /**
      * @throws ValidationException
      */
     public function __invoke(mixed $root, array $args): Listing
     {
         $request = request();
-
-        if (! $request->hasSession() || ! $request->session()->has('customer_id')) {
-            throw ValidationException::withMessages([
-                'customer' => 'You must be logged in to view your listing.',
-            ]);
-        }
+        $customerId = $this->validationService->requireCustomerId(
+            $request,
+            'You must be logged in to view your listing.',
+        );
 
         $listing = Listing::query()
             ->with([
@@ -28,7 +29,7 @@ class GetMyListingDetail
                 'claimRequests.product',
                 'claimRequests.messages.customer',
             ])
-            ->where('customer_id', $request->session()->get('customer_id'))
+            ->where('customer_id', $customerId)
             ->where('listing_id', $args['listing_id'])
             ->first();
 

@@ -2,11 +2,11 @@
 
 namespace App\GraphQL\Queries;
 
-use App\GraphQL\Queries\Contracts\FilterInterface;
 use App\DTO\Query\GetCategoryProductsResponseData;
-use App\GraphQL\Queries\Response\GetCategoryProductsResposneBuilder;
+use App\GraphQL\Queries\Contracts\FilterInterface;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Services\ResponseBuilder\GetCategoryProductsResposneBuilder;
 use App\Traits\DateTimeUtil;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -17,8 +17,7 @@ class GetCategoryProducts
 
     public function __construct(
         private readonly GetCategoryProductsResposneBuilder $responseBuilder,
-    ) {
-    }
+    ) {}
 
     public function __invoke(mixed $root, array $args): array
     {
@@ -162,5 +161,4 @@ class GetCategoryProducts
 
         return in_array($perPage, [12, 24, 36], true) ? $perPage : 12;
     }
-
 }

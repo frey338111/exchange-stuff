@@ -3,17 +3,16 @@
 namespace App\GraphQL\Queries;
 
 use App\DTO\Query\GetProductResponseData;
-use App\GraphQL\Queries\Response\GetProductResponseBuilder;
 use App\Models\ClaimRequest;
 use App\Models\Listing;
 use App\Models\Product;
+use App\Services\ResponseBuilder\GetProductResponseBuilder;
 
 class GetProduct
 {
     public function __construct(
         private readonly GetProductResponseBuilder $responseBuilder,
-    ) {
-    }
+    ) {}
 
     public function __invoke(mixed $root, array $args): ?array
     {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\GraphQL\Queries\Response;
+namespace App\Services\ResponseBuilder;
 
 use App\DTO\Query\GetProductResponseData;
 use Illuminate\Support\Facades\Storage;

@@ -9,6 +9,7 @@ use App\Services\ListingCreateService;
 use App\Services\ListingItemCreateService;
 use App\Services\ProductCreateService;
 use App\Services\ProductGalleryImageService;
+use App\Services\ValidationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -21,8 +22,8 @@ class CreateList
         private readonly ProductCreateService $productCreateService,
         private readonly ListingItemCreateService $listingItemCreateService,
         private readonly ProductGalleryImageService $productGalleryImageService,
-    ) {
-    }
+        private readonly ValidationService $validationService,
+    ) {}
 
     /**
      * @throws ValidationException
@@ -30,12 +31,10 @@ class CreateList
     public function __invoke(mixed $root, array $args): array
     {
         $request = request();
-
-        if (! $request->hasSession() || ! $request->session()->has('customer_id')) {
-            throw ValidationException::withMessages([
-                'customer' => 'You must be logged in to create a list.',
-            ]);
-        }
+        $customerId = $this->validationService->requireCustomerId(
+            $request,
+            'You must be logged in to create a list.',
+        );
 
         $input = Validator::make($args['input'], [
             'product_name' => ['required', 'string', 'max:255', 'not_regex:/<[^>]*>/'],
@@ -56,9 +55,9 @@ class CreateList
         })->validate();
 
         try {
-            DB::transaction(function () use ($input, $request): void {
+            DB::transaction(function () use ($input, $customerId): void {
                 $listing = $this->listingCreateService->create(new ListingCreateData(
-                    customerId: (int) $request->session()->get('customer_id'),
+                    customerId: $customerId,
                     notes: $input['notes'] ?? null,
                 ));
 

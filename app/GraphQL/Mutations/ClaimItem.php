@@ -5,26 +5,25 @@ namespace App\GraphQL\Mutations;
 use App\Events\ClaimRequestCreated;
 use App\Models\ClaimRequest;
 use App\Models\Listing;
+use App\Services\ValidationService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ClaimItem
 {
+    public function __construct(private readonly ValidationService $validationService) {}
+
     /**
      * @throws ValidationException
      */
     public function __invoke(mixed $root, array $args): array
     {
         $request = request();
-
-        if (! $request->hasSession() || ! $request->session()->has('customer_id')) {
-            throw ValidationException::withMessages([
-                'customer' => 'You must be logged in to claim this item.',
-            ]);
-        }
-
-        $sessionCustomerId = (int) $request->session()->get('customer_id');
+        $sessionCustomerId = $this->validationService->requireCustomerId(
+            $request,
+            'You must be logged in to claim this item.',
+        );
 
         $input = Validator::make($args['input'], [
             'customer_id' => ['required', 'integer', 'exists:customers,customer_id', Rule::in([$sessionCustomerId])],

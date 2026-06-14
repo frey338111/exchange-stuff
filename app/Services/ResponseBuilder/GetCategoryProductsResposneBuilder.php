@@ -1,20 +1,19 @@
 <?php
 
-namespace App\GraphQL\Queries\Response;
+namespace App\Services\ResponseBuilder;
 
-use App\GraphQL\Queries\Contracts\FilterInterface;
 use App\DTO\Query\GetCategoryProductsResponseData;
+use App\GraphQL\Queries\Contracts\FilterInterface;
 use App\Models\Category;
 use App\Services\CategoryImageService;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class GetCategoryProductsResposneBuilder
 {
     public function __construct(
         private readonly CategoryImageService $categoryImageService,
-    ) {
-    }
+    ) {}
 
     public function build(GetCategoryProductsResponseData $data): array
     {

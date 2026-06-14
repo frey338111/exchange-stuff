@@ -9,7 +9,9 @@ use App\Events\Strategies\ClaimRequestEventStrategyProxy;
 use App\Events\Strategies\RejectClaimRequestEventStrategy;
 use App\Models\ClaimRequest;
 use App\Models\ClaimRequestMessage;
+use App\Models\Listing;
 use App\Models\PickupAddress;
+use App\Services\ValidationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -22,7 +24,7 @@ class ProcessClaimRequest
      */
     private array $strategies;
 
-    public function __construct()
+    public function __construct(private readonly ValidationService $validationService)
     {
         $this->strategies = [
             'accept' => new ClaimRequestEventStrategyProxy(AcceptClaimRequestEventStrategy::class),
@@ -37,14 +39,10 @@ class ProcessClaimRequest
     public function __invoke(mixed $root, array $args): array
     {
         $request = request();
-
-        if (! $request->hasSession() || ! $request->session()->has('customer_id')) {
-            throw ValidationException::withMessages([
-                'customer' => 'You must be logged in to respond to claim requests.',
-            ]);
-        }
-
-        $customerId = (int) $request->session()->get('customer_id');
+        $customerId = $this->validationService->requireCustomerId(
+            $request,
+            'You must be logged in to respond to claim requests.',
+        );
         $input = $this->validateInput($args['input'] ?? [], $customerId);
 
         $claimRequest = ClaimRequest::query()
@@ -115,7 +113,7 @@ class ProcessClaimRequest
                 ]);
 
             $claimRequest->listing->update([
-                'status' => \App\Models\Listing::STATUS_COMPLETED,
+                'status' => Listing::STATUS_COMPLETED,
             ]);
         });
 

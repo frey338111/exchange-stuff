@@ -3,27 +3,28 @@
 namespace App\GraphQL\Queries;
 
 use App\Models\ClaimRequest;
+use App\Services\ValidationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 
 class GetMySentClaimRequests
 {
+    public function __construct(private readonly ValidationService $validationService) {}
+
     /**
      * @throws ValidationException
      */
     public function __invoke(): Collection
     {
         $request = request();
-
-        if (! $request->hasSession() || ! $request->session()->has('customer_id')) {
-            throw ValidationException::withMessages([
-                'customer' => 'You must be logged in to view your sent requests.',
-            ]);
-        }
+        $customerId = $this->validationService->requireCustomerId(
+            $request,
+            'You must be logged in to view your sent requests.',
+        );
 
         return ClaimRequest::query()
             ->with('product')
-            ->where('customer_id', $request->session()->get('customer_id'))
+            ->where('customer_id', $customerId)
             ->orderByDesc('request_id')
             ->get();
     }

@@ -5,6 +5,7 @@ namespace App\GraphQL\Mutations;
 use App\Events\ClaimRequestAmended;
 use App\Models\ClaimRequest;
 use App\Models\ClaimRequestMessage;
+use App\Services\ValidationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -12,20 +13,18 @@ use Illuminate\Validation\ValidationException;
 
 class RespondToAmendedClaimRequest
 {
+    public function __construct(private readonly ValidationService $validationService) {}
+
     /**
      * @throws ValidationException
      */
     public function __invoke(mixed $root, array $args): array
     {
         $request = request();
-
-        if (! $request->hasSession() || ! $request->session()->has('customer_id')) {
-            throw ValidationException::withMessages([
-                'customer' => 'You must be logged in to reply to this request.',
-            ]);
-        }
-
-        $customerId = (int) $request->session()->get('customer_id');
+        $customerId = $this->validationService->requireCustomerId(
+            $request,
+            'You must be logged in to reply to this request.',
+        );
         $input = $this->validateInput($args['input'] ?? []);
 
         $claimRequest = ClaimRequest::query()
