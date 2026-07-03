@@ -12,7 +12,7 @@ Exchange Stuff is a Laravel application for listing reusable items, browsing the
 - Vite
 - Tailwind CSS
 - PHPUnit
-- Laravel Sail, optional
+- Docker Compose for deployment
 
 ## Features
 
@@ -165,7 +165,11 @@ Claim request accepted email notification.
 - PHP 8.3 or newer
 - Composer
 - Node.js and npm
-- SQLite for the default local setup, or MySQL when using Sail
+- SQLite for the default local setup, or MySQL when using Docker Compose
+
+## Deployment
+
+For EC2 Docker deployment without changing the local Sail setup, see [docs/deployment.md](/home/chenf/laravel/exchange-stuff/docs/deployment.md).
 
 ## Setup
 
@@ -244,25 +248,23 @@ The Composer `dev` script starts the server, queue worker, logs, and Vite togeth
 composer run dev
 ```
 
-## Laravel Sail
+## Docker Deployment
 
-This project includes a Sail `compose.yaml` with MySQL, Redis, Meilisearch, Mailpit, and Selenium services.
+The local `compose.yaml` remains the Sail development setup. Production deployment uses `compose.prod.yaml` with Nginx, PHP-FPM, MySQL, Redis, a queue worker, and the Laravel scheduler.
 
-Start Sail:
-
-```bash
-./vendor/bin/sail up -d
-```
-
-Run setup commands inside Sail:
+Create a production environment file:
 
 ```bash
-./vendor/bin/sail artisan migrate --seed
-./vendor/bin/sail npm install
-./vendor/bin/sail npm run dev
+cp .env.production.example .env
 ```
 
-Mailpit is available at `http://localhost:8025` when Sail is running.
+Build and start the stack:
+
+```bash
+docker compose -f compose.prod.yaml up -d --build
+```
+
+See [docs/deployment.md](/home/chenf/laravel/exchange-stuff/docs/deployment.md) for the full EC2 deployment flow.
 
 ## GraphQL
 
