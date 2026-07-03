@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       target: app
+      args:
+        INSTALL_DEV_DEPENDENCIES: "${INSTALL_DEV_DEPENDENCIES:-false}"
     image: exchange-stuff-app:latest
     restart: unless-stopped
     env_file:

@@ -47,7 +47,8 @@ Run database migrations and seed required lookup data:
 
 ```bash
 docker compose -f compose.prod.yaml exec app php artisan migrate --force
-docker compose -f compose.prod.yaml exec app php artisan db:seed --force
+docker compose -f compose.prod.yaml exec app php artisan db:seed --class=CategorySeeder --force
+docker compose -f compose.prod.yaml exec app php artisan db:seed --class=ProductConditionSeeder --force
 ```
 
 Create the public storage symlink:
@@ -55,6 +56,19 @@ Create the public storage symlink:
 ```bash
 docker compose -f compose.prod.yaml exec app php artisan storage:link
 ```
+
+Do not run the full `db:seed --force` command against the default production image. `DatabaseSeeder` creates demo users/listings through factories and Faker, which are development-only dependencies.
+
+## Demo/Test Seed Data
+
+If this EC2 environment should include all seeders and demo/test data, build the image with development dependencies enabled:
+
+```bash
+INSTALL_DEV_DEPENDENCIES=true docker compose -f compose.prod.yaml up -d --build
+docker compose -f compose.prod.yaml exec app php artisan migrate:fresh --seed --force
+```
+
+This resets the database. If you already have data you want to keep, use `db:seed --force` instead of `migrate:fresh --seed --force`.
 
 ## Updates
 

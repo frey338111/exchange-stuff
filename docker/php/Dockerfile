@@ -13,14 +13,25 @@ FROM composer:2 AS vendor
 
 WORKDIR /app
 
+ARG INSTALL_DEV_DEPENDENCIES=false
+
 COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --no-progress \
-    --prefer-dist \
-    --optimize-autoloader \
-    --no-scripts
+RUN if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
+        composer install \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --optimize-autoloader \
+            --no-scripts; \
+    else \
+        composer install \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --optimize-autoloader \
+            --no-scripts; \
+    fi
 
 COPY app ./app
 COPY bootstrap ./bootstrap
@@ -29,7 +40,11 @@ COPY database ./database
 COPY graphql ./graphql
 COPY routes ./routes
 COPY artisan ./
-RUN composer dump-autoload --no-dev --optimize --no-scripts
+RUN if [ "$INSTALL_DEV_DEPENDENCIES" = "true" ]; then \
+        composer dump-autoload --optimize --no-scripts; \
+    else \
+        composer dump-autoload --no-dev --optimize --no-scripts; \
+    fi
 
 FROM php:8.4-fpm-bookworm AS app
 
