@@ -75,18 +75,36 @@ This resets the database. If you already have data you want to keep, use `db:see
 Pull the latest code, rebuild the image, and restart the services:
 
 ```bash
-git pull
-docker compose -f compose.prod.yaml up -d --build
-docker compose -f compose.prod.yaml exec app php artisan migrate --force
+./scripts/deploy-production.sh
 ```
 
 The app image builds Composer dependencies and Vite assets during `docker compose -f compose.prod.yaml build`; you do not need Node.js, Composer, `vendor`, or `node_modules` on the EC2 host.
+
+## Automatic Deployment
+
+The `.github/workflows/deploy-production.yml` workflow runs after every push to `master`. It connects to the EC2 instance over SSH and runs `./scripts/deploy-production.sh` inside the server clone.
+
+Configure these GitHub repository secrets:
+
+- `EC2_HOST`: public IP or hostname for the EC2 instance.
+- `EC2_USER`: SSH user, for example `ubuntu`.
+- `EC2_SSH_KEY`: private SSH key with access to the EC2 instance.
+- `EC2_APP_DIR`: absolute path to this repository on EC2.
+- `EC2_SSH_PORT`: optional SSH port. Use `22` if not customized.
+
+The deploy script fetches `origin/master`, fast-forwards the server clone, rebuilds and restarts the production Compose stack, runs migrations, refreshes the storage symlink, and checks the app with `php artisan about`.
 
 ## Environment Changes
 
 The production Compose file mounts the server `.env` file into the Laravel containers at `/var/www/html/.env`.
 
-After editing `.env` on the server, restart the Laravel services so the production config cache is rebuilt with the new values:
+After deploying this Compose change for the first time, recreate the Laravel containers so Docker applies the new bind mount:
+
+```bash
+docker compose -f compose.prod.yaml up -d --force-recreate app queue scheduler nginx
+```
+
+After later edits to `.env` on the server, restart the Laravel services so the production config cache is rebuilt with the new values:
 
 ```bash
 docker compose -f compose.prod.yaml restart app queue scheduler
