@@ -82,6 +82,16 @@ docker compose -f compose.prod.yaml exec app php artisan migrate --force
 
 The app image builds Composer dependencies and Vite assets during `docker compose -f compose.prod.yaml build`; you do not need Node.js, Composer, `vendor`, or `node_modules` on the EC2 host.
 
+## Environment Changes
+
+The production Compose file mounts the server `.env` file into the Laravel containers at `/var/www/html/.env`.
+
+After editing `.env` on the server, restart the Laravel services so the production config cache is rebuilt with the new values:
+
+```bash
+docker compose -f compose.prod.yaml restart app queue scheduler
+```
+
 ## Useful Commands
 
 View logs:
