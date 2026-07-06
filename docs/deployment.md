@@ -4,7 +4,7 @@ This project keeps the local Sail `compose.yaml` unchanged and ships a productio
 
 ## Services
 
-- `nginx`: public HTTP entrypoint on `APP_PORT`, serving static files and forwarding PHP requests to PHP-FPM.
+- `nginx`: internal HTTP service for Traefik, serving static files and forwarding PHP requests to PHP-FPM.
 - `app`: Laravel PHP-FPM application container.
 - `queue`: Laravel queue worker for queued mail and background jobs.
 - `scheduler`: Laravel scheduler process.
@@ -15,6 +15,13 @@ This project keeps the local Sail `compose.yaml` unchanged and ships a productio
 
 On the EC2 server, install Docker and the Docker Compose plugin, then clone the repository.
 
+Create the shared Docker networks if they do not already exist:
+
+```bash
+docker network create web
+docker network create backend
+```
+
 Create the production environment file:
 
 ```bash
@@ -24,6 +31,7 @@ cp .env.production.example .env
 Edit `.env` and set:
 
 - `APP_URL`
+- `APP_HOST`
 - `APP_KEY`
 - `DB_PASSWORD`
 - `DB_ROOT_PASSWORD`
@@ -94,6 +102,40 @@ Configure these GitHub repository secrets:
 
 The deploy script fetches `origin/master`, fast-forwards the server clone, rebuilds and restarts the production Compose stack, runs migrations, refreshes the storage symlink, and checks the app with `php artisan about`.
 
+## Traefik
+
+This project expects Traefik to run separately on the external Docker network named `web`. The production Compose file no longer publishes Nginx directly to the host. Instead, Traefik discovers the `nginx` service through Docker labels and routes requests for `APP_HOST` to port `80` inside the Nginx container.
+
+Keep the `web` network limited to Traefik and public-facing web servers. MySQL and Redis are attached to a separate external `backend` network for private cross-application access.
+
+Set these values in `.env`:
+
+```env
+APP_URL=http://example.com
+APP_HOST=example.com
+```
+
+If Traefik is configured for HTTPS, use the HTTPS URL:
+
+```env
+APP_URL=https://example.com
+APP_HOST=example.com
+SESSION_SECURE_COOKIE=true
+```
+
+For plain HTTP, keep:
+
+```env
+SESSION_SECURE_COOKIE=false
+```
+
+Other Compose projects attached to the `backend` network can connect to this project's shared services with these hostnames:
+
+```text
+mysql:3306
+redis:6379
+```
+
 ## Environment Changes
 
 The production Compose file mounts the server `.env` file into the Laravel containers at `/var/www/html/.env`.
@@ -135,15 +177,6 @@ Open a shell inside the app container:
 ```bash
 docker compose -f compose.prod.yaml exec app sh
 ```
-
-## HTTPS
-
-This Compose file exposes HTTP on port 80. Put HTTPS in front of it with one of these approaches:
-
-- AWS Application Load Balancer with an ACM certificate.
-- A host-level reverse proxy such as Caddy, Traefik, or Nginx with Certbot.
-
-When HTTPS is enabled, keep `APP_URL=https://...` and `SESSION_SECURE_COOKIE=true`.
 
 ## Backups
 
