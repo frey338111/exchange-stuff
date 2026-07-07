@@ -4,6 +4,7 @@ set -Eeuo pipefail
 APP_DIR="${APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 BRANCH="${DEPLOY_BRANCH:-master}"
 COMPOSE_FILE="${COMPOSE_FILE:-compose.prod.yaml}"
+COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-.env}"
 LOCK_FILE="${LOCK_FILE:-/tmp/exchange-stuff-deploy.lock}"
 
 log() {
@@ -20,8 +21,8 @@ fi
 
 log "Starting deployment in $APP_DIR on branch $BRANCH"
 
-if [ ! -f .env ]; then
-    log "Missing .env file. Create it from .env.production.example before deploying."
+if [ ! -f "$COMPOSE_ENV_FILE" ]; then
+    log "Missing $COMPOSE_ENV_FILE file. Create it from .env.production.example before deploying."
     exit 1
 fi
 
@@ -35,9 +36,9 @@ git fetch origin "$BRANCH"
 git checkout "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 
-docker compose -f "$COMPOSE_FILE" up -d --build --remove-orphans
-docker compose -f "$COMPOSE_FILE" exec -T app php artisan migrate --force
-docker compose -f "$COMPOSE_FILE" exec -T app php artisan storage:link || true
-docker compose -f "$COMPOSE_FILE" exec -T app php artisan about
+docker compose --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" up -d --build --remove-orphans
+docker compose --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" exec -T app php artisan migrate --force
+docker compose --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" exec -T app php artisan storage:link || true
+docker compose --env-file "$COMPOSE_ENV_FILE" -f "$COMPOSE_FILE" exec -T app php artisan about
 
 log "Deployment complete."
