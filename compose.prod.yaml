@@ -23,8 +23,18 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
+
+      # HTTP router (used for redirect and ACME challenge)
+      - "traefik.http.routers.exchange-stuff-http.rule=Host(`${APP_HOST:?APP_HOST is required}`)"
+      - "traefik.http.routers.exchange-stuff-http.entrypoints=web"
+
+      # HTTPS router
       - "traefik.http.routers.exchange-stuff.rule=Host(`${APP_HOST:?APP_HOST is required}`)"
-      - "traefik.http.routers.exchange-stuff.entrypoints=web"
+      - "traefik.http.routers.exchange-stuff.entrypoints=websecure"
+      - "traefik.http.routers.exchange-stuff.tls=true"
+      - "traefik.http.routers.exchange-stuff.tls.certresolver=letsencrypt"
+
+      # Backend service
       - "traefik.http.services.exchange-stuff.loadbalancer.server.port=80"
 
     volumes:
