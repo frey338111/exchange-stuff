@@ -74,7 +74,10 @@ COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint
 
 COPY --chown=www-data:www-data . .
 COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
-COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
+# Keep a copy outside /var/www/html/public because production mounts that path
+# as a named volume. The entrypoint publishes these freshly built assets into
+# the volume whenever a new application image starts.
+COPY --from=assets --chown=www-data:www-data /app/public/build /opt/app-public/build
 
 RUN chmod +x /usr/local/bin/entrypoint \
     && chown -R www-data:www-data storage bootstrap/cache public
