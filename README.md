@@ -2,6 +2,9 @@
 
 Exchange Stuff is a Laravel application for listing reusable items, browsing them through a Vue storefront, and managing item claims from a dashboard.
 
+Demo Url:
+https://demo.exchange.hmhnetworksolutions.co.uk/
+
 ## Tech Stack
 
 - PHP 8.3+
